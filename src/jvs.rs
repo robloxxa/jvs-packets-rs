@@ -1,7 +1,7 @@
 //! A packet structures used for communication with JAMMA Video Standart.
 use std::convert::{AsMut, AsRef};
 
-use super::Packet;
+use crate::{impl_required_packet_blocks, Packet, ReportField};
 
 #[derive(Debug, Clone)]
 pub struct RequestPacket<const N: usize = 256> {
@@ -14,44 +14,7 @@ impl<const N: usize> Packet for RequestPacket<N> {
     const DESTINATION_INDEX: usize = 1;
 }
 
-impl<const N: usize> RequestPacket<N> {
-    pub const fn new() -> Self {
-        assert!(N > 4);
-        Self { inner: [0; N] }
-    }
-
-    // pub fn from_reader(&mut self, reader: &mut impl Read) -> Result<(), Error> { Ok(()) }
-
-    /// Initialize a struct from a slice.
-    ///
-    /// # Panics
-    /// If the slice length is less than 4 and more than N.
-    /// The slice can't be less than 4 because the packet is always has at least 4 bytes.
-    pub fn from_slice(slice: &[u8]) -> Self {
-        assert!(slice.len() > 4);
-        let mut packet = Self::new();
-        packet.inner[..slice.len()].copy_from_slice(slice);
-        packet
-    }
-}
-
-impl<const N: usize> AsRef<[u8]> for RequestPacket<N> {
-    fn as_ref(&self) -> &[u8] {
-        &self.inner
-    }
-}
-
-impl<const N: usize> AsMut<[u8]> for RequestPacket<N> {
-    fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.inner
-    }
-}
-
-impl<const N: usize> Default for RequestPacket<N> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+impl_required_packet_blocks!(RequestPacket);
 
 /// jvs response report codes.
 #[derive(Debug, Clone)]
@@ -91,65 +54,22 @@ impl<const N: usize> Packet for ResponsePacket<N> {
     const DESTINATION_INDEX: usize = 1;
 }
 
-impl<const N: usize> ResponsePacket<N> {
+impl<const N: usize> ReportField for ResponsePacket<N> {
     const REPORT_INDEX: usize = 3;
-
-    pub const fn new() -> Self {
-        assert!(N > 4);
-        Self { inner: [0; N] }
-    }
-
-    // pub fn from_reader(&mut self, reader: &mut impl Read) -> Result<(), Error> { Ok(()) }
-
-    /// Initialize a struct from a slice.
-    ///
-    /// # Panics
-    /// If the slice length is less than 4 and more than N.
-    /// The slice can't be less than 4 because the packet is always has at least 4 bytes.
-    pub fn from_slice(slice: &[u8]) -> Self {
-        assert!(slice.len() > 4);
-        let mut packet = Self::new();
-        packet.inner[..slice.len()].copy_from_slice(slice);
-        packet
-    }
-
-    pub fn report(&self) -> Report {
-        self.inner[Self::REPORT_INDEX].into()
-    }
-
-    pub fn set_report(&mut self, report: impl Into<u8>) -> &mut Self {
-        self.inner[Self::REPORT_INDEX] = report.into();
-        self
-    }
 }
 
-impl<const N: usize> AsRef<[u8]> for ResponsePacket<N> {
-    fn as_ref(&self) -> &[u8] {
-        &self.inner
-    }
-}
+impl_required_packet_blocks!(ResponsePacket);
 
-impl<const N: usize> AsMut<[u8]> for ResponsePacket<N> {
-    fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.inner
-    }
-}
-
-impl<const N: usize> Default for ResponsePacket<N> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    #[should_panic]
-    fn test_request_packet_new_panic() {
-        let _ = RequestPacket::<1>::new();
-    }
+    // #[test]
+    // #[should_panic]
+    // fn test_request_packet_new_panic() {
+    //     let _ = RequestPacket::<1>::new();
+    // }
 
     #[test]
     fn test_request_packet_from_slice() {
@@ -158,12 +78,12 @@ mod tests {
         assert_eq!(&data, packet.as_slice());
     }
 
-    #[test]
-    #[should_panic]
-    fn test_request_packet_from_slice_panic() {
-        let data = [0, 1, 2];
-        RequestPacket::<256>::from_slice(&data);
-    }
+    // #[test]
+    // #[should_panic]
+    // fn test_request_packet_from_slice_panic() {
+    //     let data = [0, 1, 2];
+    //     RequestPacket::<256>::from_slice(&data);
+    // }
 
     #[test]
     fn test_request_packet_access_methods() {

@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 /// SYNC byte indicates the beginning of the packet.
 ///
 /// Readers should skip bytes until the SYNC byte is found.
-const SYNC_BYTE: u8 = 0xE0;
+pub const SYNC_BYTE: u8 = 0xE0;
 
 /// MARK byte is used for escaping the [`SYNC_BYTE`] and [`MARK_BYTE`] bytes.
 ///
@@ -10,7 +10,35 @@ const SYNC_BYTE: u8 = 0xE0;
 /// it is escaped in the actual data by prepending [`MARK_BYTE`] and substructing one from the byte's value.
 ///
 /// [`SYNC_BYTE`] and [`MARK_BYTE`] bytes are escaped as `D0 DF` and `D0 CF` respectively. Altough any bytes can be escaped, only these 2 bytes requried escaping.
-const MARK_BYTE: u8 = 0xD0;
+pub const MARK_BYTE: u8 = 0xD0;
+
+// TODO: The report codes may be same across jvs and jvs_modified, need to investigate this
+/// jvs response report codes.
+#[derive(Debug, Clone)]
+pub enum Report {
+    /// Request was processed successfully.
+    Normal,
+    /// Incorrect number of parameters were sent.
+    IncorrectDataSize,
+    /// Incorrect data was sent
+    InvalidData,
+    /// The device I/O is busy.
+    Busy,
+    /// Unknown report code.
+    Unknown,
+}
+
+impl From<u8> for Report {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Report::Normal,
+            2 => Report::IncorrectDataSize,
+            3 => Report::InvalidData,
+            4 => Report::Busy,
+            _ => Report::Unknown,
+        }
+    }
+}
 
 /// A trait for all packets structures
 pub trait Packet: AsRef<[u8]> + AsMut<[u8]> {
@@ -111,13 +139,34 @@ pub trait Packet: AsRef<[u8]> + AsMut<[u8]> {
     }
 }
 
+/// A trait that add's additional setters for Response Packets.
+///
+/// All responses from jvs has report code that will indicate whether the request was processed successfully or not.
+pub trait ReportField: Packet {
+    const REPORT_INDEX: usize;
+
+    /// Returns a report code.
+    fn report(&self) -> Report {
+        self.as_ref()[Self::REPORT_INDEX].into()
+    }
+
+    /// Sets a report code.
+    fn set_report(&mut self, report: impl Into<u8>) -> &mut Self {
+        self.as_mut()[Self::REPORT_INDEX] = report.into();
+        self
+    }
+}
+
+/// Additional methods for [`std::io::Read`] trait to read a single (escaped) byte.
 pub trait ReadByteExt: Read {
+    /// Reads a single byte.
     fn read_u8(&mut self) -> io::Result<u8> {
         let mut buf = [0; 1];
         self.read_exact(&mut buf)?;
         Ok(buf[0])
     }
 
+    /// Check if the first byte is [`MARK_BYTE`] and if it is, it will read the next byte and add one to it.
     fn read_u8_escaped(&mut self) -> io::Result<u8> {
         let mut b = self.read_u8()?;
         if b == MARK_BYTE {
@@ -129,11 +178,14 @@ pub trait ReadByteExt: Read {
 
 impl<R: Read + ?Sized> ReadByteExt for R {}
 
+/// Additional methods for [`std::io::Write`] trait to write a single byte.
 pub trait WriteByteExt: Write {
+    /// Writes a single byte.
     fn write_u8(&mut self, b: u8) -> io::Result<()> {
         self.write_all(&[b])
     }
-
+    /// Will check if first byte is [`SYNC_BYTE`] or [`MARK_BYTE`] and if it is,
+    /// it will write a byte value sub 1, followed by [`MARK_BYTE`].
     fn write_u8_escaped(&mut self, b: u8) -> io::Result<usize> {
         if b == SYNC_BYTE || b == MARK_BYTE {
             self.write_all(&[MARK_BYTE, b.wrapping_sub(1)])?;
@@ -148,7 +200,7 @@ pub trait WriteByteExt: Write {
 impl<W: Write + ?Sized> WriteByteExt for W {}
 
 /// A helper trait which implemented for [`std::io::Read`]. Contains methods for reading [`Packet`]s from the Reader.
-/// 
+///
 /// It is better to use [`std::io::BufReader`] to avoid unnecessary syscalls, since we have to read one byte at a time to check for escaped by [`MARK_BYTE`] bytes.
 pub trait ReadPacket: Read {
     fn read_packet<P: Packet>(&mut self, packet: &mut P) -> io::Result<u8> {
@@ -180,23 +232,25 @@ pub trait ReadPacket: Read {
 
 impl<R: Read + ?Sized> ReadPacket for R {}
 
-
 /// A helper trait which implemented for [`std::io::Write`]. Contains methods for writing [`Packet`]s to the Writer.
-/// 
+///
 /// It is better to use [`std::io::BufWriter`] to avoid unnecessary syscalls, since we have to read one byte at a time to check for escaped by [`MARK_BYTE`] bytes.
 pub trait WritePacket: Write {
     /// Writes a packet to the Writer.
-    /// 
+    ///
     /// The function doesn't calculate checksum and instead writes whatever is present in the packet itself. So you have to use [`Packet::calculate_checksum`] before writing.
     /// Use [`Self::write_packet_with_checksum`] to calculate checksum while writing bytes.
-    /// 
+    ///
     /// # Errors
-    /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`P::DATA_BEGIN_INDEX`] + 1 which is nonsense.
+    /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`Packet::DATA_BEGIN_INDEX`] + 1 which is nonsense.
     fn write_packet<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
         if packet.len_of_packet() < P::DATA_BEGIN_INDEX + 1 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("The size of packet is can't be less than {}", P::DATA_BEGIN_INDEX + 1),
+                format!(
+                    "The size of packet is can't be less than {}",
+                    P::DATA_BEGIN_INDEX + 1
+                ),
             ));
         }
         let mut bytes_written = 1;
@@ -210,16 +264,18 @@ pub trait WritePacket: Write {
         Ok(bytes_written)
     }
 
-
     /// Similar to [`WritePacket::write_packet`], but it will calculate checksum while writing bytes to the writer.
-    /// 
+    ///
     /// # Errors
-    /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`P::DATA_BEGIN_INDEX`] + 1 which is nonsense.
+    /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`Packet::DATA_BEGIN_INDEX`] + 1 which is nonsense.
     fn write_packet_with_checksum<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
         if packet.len_of_packet() < P::DATA_BEGIN_INDEX + 1 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("The size of packet is can't be less than {}", P::DATA_BEGIN_INDEX + 1),
+                format!(
+                    "The size of packet is can't be less than {}",
+                    P::DATA_BEGIN_INDEX + 1
+                ),
             ));
         }
 

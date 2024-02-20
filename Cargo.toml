@@ -2,3 +2,14 @@
 name = "sg_packets"
 version = "0.1.0"
 edition = "2021"
+authors = ["robloxxa"]
+description = "A crate that provide structures for working with JVS protocols"
+license = "MIT"
+keywords = ["jvs", "arcade"]
+
+[features]
+default = ["jvs", "jvs_modified"]
+jvs = []
+jvs_modified = []
+
+
