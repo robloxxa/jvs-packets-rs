@@ -21,10 +21,14 @@ pub trait ModifiedPacket: Packet {
     const CMD_INDEX: usize;
     const SEQUENCE_INDEX: usize;
 
+    /// Returns a CMD byte at [`ModifiedPacket::CMD_INDEX`]
+    ///
+    /// The CMD byte is used for telling a JVS to execute a speific command 
     fn cmd(&self) -> u8 {
         self.as_ref()[Self::CMD_INDEX]
     }
 
+    /// Sets a CMD byte at [`ModifiedPacket::CMD_INDEX`]
     fn set_cmd(&mut self, cmd: u8) -> &mut Self {
         self.as_mut()[Self::CMD_INDEX] = cmd;
         self
