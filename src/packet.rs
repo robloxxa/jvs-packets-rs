@@ -12,18 +12,23 @@ pub const SYNC_BYTE: u8 = 0xE0;
 /// [`SYNC_BYTE`] and [`MARK_BYTE`] bytes are escaped as `D0 DF` and `D0 CF` respectively. Altough any bytes can be escaped, only these 2 bytes requried escaping.
 pub const MARK_BYTE: u8 = 0xD0;
 
-// TODO: The report codes may be same across jvs and jvs_modified, need to investigate this
-/// jvs response report codes.
+/// JVS response report codes.
+/// 
+/// When slave sending response to master, it will always contain a report code, which is placed before first DATA byte.
+/// 
+/// The Report byte indicates whether a request was completed succesfully.
+/// 
+/// Check variants documentation if you need to know what which code does.
 #[derive(Debug, Clone)]
 pub enum Report {
     /// Request was processed successfully.
-    Normal,
+    Normal = 1,
     /// Incorrect number of parameters were sent.
-    IncorrectDataSize,
+    IncorrectDataSize = 2,
     /// Incorrect data was sent
-    InvalidData,
+    InvalidData = 3,
     /// The device I/O is busy.
-    Busy,
+    Busy = 4,
     /// Unknown report code.
     Unknown,
 }

@@ -1,4 +1,17 @@
 //! A packet structures used for communication with JAMMA Video Standart.
+//! 
+//! # Request Packet (master -> slave)
+//!  00     | 01     | 02  | 03       | 04        | ...          | N + 2 
+//! :------:|:------:|:---:|:--------:|:---------:|:------------:|:-----:   
+//!  [SYNC] | `DEST` | `N` | `DATA_0` | `DATA_1 ` | `DATA_(N-1)` | `SUM` 
+//!  
+//! # Response Packet (slave -> master)
+//!  00     | 01     | 02  | 03       | 04        | 05       | ...          | N + 2 
+//! :------:|:------:|:---:|:--------:|:---------:|:--------:|:------------:|:-----:   
+//!  [SYNC] | `DEST` | `N` | [REPORT] | `DATA_0`  | `DATA_1` | `DATA_(N-1)` | `SUM` 
+//! 
+//! [SYNC]: crate::SYNC_BYTE
+//! [REPORT]: crate::Report
 use std::convert::{AsMut, AsRef};
 
 use crate::{impl_required_packet_blocks, Packet, ReportField};
@@ -15,33 +28,6 @@ impl<const N: usize> Packet for RequestPacket<N> {
 }
 
 impl_required_packet_blocks!(RequestPacket);
-
-/// jvs response report codes.
-#[derive(Debug, Clone)]
-pub enum Report {
-    /// Request was processed successfully.
-    Normal = 1,
-    /// Incorrect number of parameters were sent.
-    IncorrectDataSize,
-    /// Incorrect data was sent
-    InvalidData,
-    /// The device I/O is busy.
-    Busy,
-    /// Unknown report code.
-    Unknown,
-}
-
-impl From<u8> for Report {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => Report::Normal,
-            2 => Report::IncorrectDataSize,
-            3 => Report::InvalidData,
-            4 => Report::Busy,
-            _ => Report::Unknown,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct ResponsePacket<const N: usize = 256> {

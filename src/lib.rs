@@ -1,3 +1,14 @@
+//! A packet structures for [JAMMA Video Standart] protocols.
+//! 
+//! This crate provides a wrapper around `[u8]` array with getter and setter methods for easily changing/writing/reading data.
+//! 
+//! # Example
+//! ```
+//! 
+//! ```
+//! 
+//! [JAMMA Video Standart]: https://en.wikipedia.org/wiki/Japan_Amusement_Machine_and_Marketing_Association#Video
+
 mod packet;
 pub use packet::{
     Packet, ReadByteExt, ReadPacket, Report, ReportField, WriteByteExt, WritePacket, MARK_BYTE, SYNC_BYTE,
