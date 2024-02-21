@@ -1,11 +1,12 @@
 [package]
-name = "jvs_packets"
+name = "jvs-packets"
 version = "1.0.0"
 edition = "2021"
 authors = ["robloxxa"]
 description = "A crate that provide structures for working with JVS protocols"
 license = "MIT"
 keywords = ["jvs", "arcade"]
+repository = "https://github.com/robloxxa/jvs-packets-rs"
 
 [features]
 default = ["jvs", "jvs_modified"]
