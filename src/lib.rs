@@ -1,6 +1,6 @@
 //! A packet structures for [JAMMA Video Standart] protocols.
 //! 
-//! This crate provides a wrapper around `[u8]` array with getter and setter methods for easily changing/writing/reading data.
+//! This crate provides a wrapper around `[`[u8]`]` array with getter and setter methods for easily changing/writing/reading data.
 //! 
 //! # Example
 //! ```
@@ -10,7 +10,7 @@
 //!     // This is only for example. You can use any structure, that implements std::io::Read. 
 //!     let mut reader = std::io::Cursor::new([0xE0, 0xFF, 0x03, 0x01, 0x02, 0x05]);
 //!     let mut req_packet: RequestPacket = RequestPacket::new();
-//!     reader.read_packet(&mut req_packet);
+//!     reader.read_packet(&mut req_packet)?;
 //!     
 //!     assert_eq!(req_packet.size(), 0x03);
 //!     Ok(())
@@ -31,7 +31,6 @@ pub mod jvs;
 pub mod jvs_modified;
 
 #[cfg(any(feature = "jvs", feature = "jvs_modified"))]
-#[macro_export]
 macro_rules! impl_required_packet_blocks {
     ($t:tt) => {
         impl<const N: usize> $t<N> {
@@ -77,3 +76,5 @@ macro_rules! impl_required_packet_blocks {
         }
     };
 }
+
+pub(crate) use impl_required_packet_blocks;
