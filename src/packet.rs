@@ -117,7 +117,7 @@ pub trait Packet: AsRef<[u8]> + AsMut<[u8]> {
 
     /// Calculates checksum.
     ///
-    /// The checksum is calculated by summing all bytes except the SYNC (first byte).
+    /// The checksum is calculated by summing all bytes in the packet except the [`SYNC_BYTE`].
     fn calculate_checksum(&mut self) -> &mut Self {
         self.set_checksum(
             self.as_slice()
@@ -152,6 +152,10 @@ pub trait ReportField: Packet {
 
     /// Returns a report code.
     fn report(&self) -> Report {
+        self.as_ref()[Self::REPORT_INDEX].into()
+    }
+
+    fn report_raw(&self) -> u8 {
         self.as_ref()[Self::REPORT_INDEX].into()
     }
 
@@ -287,8 +291,8 @@ pub trait WritePacket: Write {
         self.write_u8(SYNC_BYTE)?;
         let mut bytes_written: usize = 2;
         let mut checksum: u8 = 0;
-
-        for &b in &packet.as_slice()[1..packet.len_of_packet()] {
+        dbg!(&packet.as_slice()[1..packet.len_of_packet()]);
+        for &b in &packet.as_slice()[1..packet.len_of_packet() - 1] {
             bytes_written += self.write_u8_escaped(b)?;
             checksum = checksum.wrapping_add(b);
         }
@@ -298,3 +302,5 @@ pub trait WritePacket: Write {
         Ok(bytes_written)
     }
 }
+
+impl<W: Write + ?Sized> WritePacket for W {}
