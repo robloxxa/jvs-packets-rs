@@ -157,7 +157,7 @@ pub trait ReportField: Packet {
     }
 
     fn report_raw(&self) -> u8 {
-        self.as_ref()[Self::REPORT_INDEX].into()
+        self.as_ref()[Self::REPORT_INDEX]
     }
 
     /// Sets a report code.
