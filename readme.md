@@ -6,12 +6,16 @@
 [docs.rs]: https://docs.rs/jvs-packets
 [LICENSE-MIT]: https://github.com/foresterre/cargo-msrv/blob/HEAD/LICENSE-MIT
 [JAMMA Video Standart]: https://en.wikipedia.org/wiki/Japan_Amusement_Machine_and_Marketing_Association#Video
+[MaiFinaleToDX]: https://github.com/robloxxa/MaiFinaleToDX
 
 A packet structures for [JAMMA Video Standart] protocols.
 
-This crate provides a wrapper around `[u8]` array with getter and setter methods for easily changing/writing/reading data.
+This crate provides a wrapper around `[u8]` array with getter and setter methods for easily writing/reading jvs data.
+
 
 ---
+
+This crate was initially created for my other project [MaiFinaleToDX]
 
 # Example
 ```rust

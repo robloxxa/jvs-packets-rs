@@ -22,8 +22,8 @@ pub struct RequestPacket<const N: usize = 256> {
 }
 
 impl<const N: usize> Packet for RequestPacket<N> {
-    const DATA_BEGIN_INDEX: usize = 3;
     const SIZE_INDEX: usize = 2;
+    const DATA_BEGIN_INDEX: usize = 3;
     const DESTINATION_INDEX: usize = 1;
 }
 
@@ -35,8 +35,8 @@ pub struct ResponsePacket<const N: usize = 256> {
 }
 
 impl<const N: usize> Packet for ResponsePacket<N> {
-    const DATA_BEGIN_INDEX: usize = 4;
     const SIZE_INDEX: usize = 2;
+    const DATA_BEGIN_INDEX: usize = 4;
     const DESTINATION_INDEX: usize = 1;
 }
 

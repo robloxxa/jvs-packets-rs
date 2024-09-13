@@ -1,6 +1,6 @@
 //! A packet structures for [JAMMA Video Standart] protocols.
 //! 
-//! This crate provides a wrapper around `[`[u8]`]` array with getter and setter methods for easily changing/writing/reading data.
+//! This crate provides a wrapper around `[`[u8]`]` array with getter and setter methods for easily writing/reading data.
 //! 
 //! # Example
 //! ```

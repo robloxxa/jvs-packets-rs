@@ -50,8 +50,8 @@ pub struct RequestPacket<const N: usize = 256> {
 }
 
 impl<const N: usize> Packet for RequestPacket<N> {
-    const DATA_BEGIN_INDEX: usize = 5;
     const SIZE_INDEX: usize = 1;
+    const DATA_BEGIN_INDEX: usize = 5;
     const DESTINATION_INDEX: usize = 2;
 }
 
@@ -68,8 +68,8 @@ pub struct ResponsePacket<const N: usize = 256> {
 }
 
 impl<const N: usize> Packet for ResponsePacket<N> {
-    const DATA_BEGIN_INDEX: usize = 7;
     const SIZE_INDEX: usize = 1;
+    const DATA_BEGIN_INDEX: usize = 7;
     const DESTINATION_INDEX: usize = 2;
 }
 
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_request_packet_access_methods() {
-        let packet = dbg!(RequestPacket::<256>::from_slice(&REQUEST_DATA));
+        let packet = RequestPacket::<256>::from_slice(&REQUEST_DATA);
 
         assert_eq!(packet.sync(), REQUEST_DATA[0]);
         assert_eq!(packet.size(), REQUEST_DATA[1]);
@@ -155,7 +155,6 @@ mod tests {
 
     #[test]
     fn test_request_packet_write() {
-        use crate::WritePacket;
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = RequestPacket::<256>::from_slice(&REQUEST_DATA);
         writer.write_packet_with_checksum(&packet).unwrap();
@@ -226,7 +225,6 @@ mod tests {
 
     #[test]
     fn test_response_packet_write() {
-        use crate::WritePacket;
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = ResponsePacket::<256>::from_slice(&RESPONSE_DATA);
         writer.write_packet_with_checksum(&packet).unwrap();
