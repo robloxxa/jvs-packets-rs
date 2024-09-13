@@ -6,17 +6,18 @@ pub const SYNC_BYTE: u8 = 0xE0;
 
 /// MARK byte is used for escaping the [`SYNC_BYTE`] and [`MARK_BYTE`] bytes.
 ///
-/// Since [`SYNC_BYTE`] is reserved for indicating the beggining of the packet,
-/// it is escaped in the actual data by prepending [`MARK_BYTE`] and substructing one from the byte's value.
+/// Since [`SYNC_BYTE`] is reserved for indicating the beginning of the packet,
+/// it is escaped in the actual data by prepending [`MARK_BYTE`] and subtracting one from the byte's value.
 ///
-/// [`SYNC_BYTE`] and [`MARK_BYTE`] bytes are escaped as `D0 DF` and `D0 CF` respectively. Altough any bytes can be escaped, only these 2 bytes requried escaping.
+/// [`SYNC_BYTE`] and [`MARK_BYTE`] bytes are escaped as `D0 DF` and `D0 CF` respectively.
+/// Although any bytes can be escaped, only these 2 bytes required escaping.
 pub const MARK_BYTE: u8 = 0xD0;
 
 /// JVS response report codes.
 /// 
 /// When slave sending response to master, it will always contain a report code, which is placed before first DATA byte.
 /// 
-/// The Report byte indicates whether a request was completed succesfully.
+/// The Report byte indicates whether a request was completed successfully.
 /// 
 /// Check variants documentation if you need to know what which code does.
 #[derive(Debug, Clone)]
@@ -144,7 +145,7 @@ pub trait Packet: AsRef<[u8]> + AsMut<[u8]> {
     }
 }
 
-/// A trait that add's additional setters for Response Packets.
+/// A trait that adds additional setters for Response Packets.
 ///
 /// All responses from jvs has report code that will indicate whether the request was processed successfully or not.
 pub trait ReportField: Packet {
@@ -189,12 +190,13 @@ impl<R: Read + ?Sized> ReadByteExt for R {}
 
 /// Additional methods for [`std::io::Write`] trait to write a single byte.
 pub trait WriteByteExt: Write {
-    /// Writes a single byte.
+    /// Writes a single byte to the writer.
     fn write_u8(&mut self, b: u8) -> io::Result<()> {
         self.write_all(&[b])
     }
-    /// Will check if first byte is [`SYNC_BYTE`] or [`MARK_BYTE`] and if it is,
-    /// it will write a byte value sub 1, followed by [`MARK_BYTE`].
+
+    /// Writes [`MARK_BYTE`] and [`b`] if [`b`] equals to either [`MARK_BYTE`] or [`SYNC_BYTE`],
+    /// otherwise only [`b`] is written.
     fn write_u8_escaped(&mut self, b: u8) -> io::Result<usize> {
         if b == SYNC_BYTE || b == MARK_BYTE {
             self.write_all(&[MARK_BYTE, b.wrapping_sub(1)])?;
@@ -210,7 +212,7 @@ impl<W: Write + ?Sized> WriteByteExt for W {}
 
 /// A helper trait which implemented for [`std::io::Read`]. Contains methods for reading [`Packet`]s from the Reader.
 ///
-/// It is better to use [`std::io::BufReader`] to avoid unnecessary syscalls, since we have to read one byte at a time to check for escaped by [`MARK_BYTE`] bytes.
+/// It is better to use [`std::io::BufReader`] to avoid unnecessary syscalls, since we have to read one byte at a time to check for [`MARK_BYTE`].
 pub trait ReadPacket: Read {
     fn read_packet<P: Packet>(&mut self, packet: &mut P) -> io::Result<u8> {
         let sync = self.read_u8()?;
@@ -252,7 +254,7 @@ pub trait WritePacket: Write {
     ///
     /// # Errors
     /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`Packet::DATA_BEGIN_INDEX`] + 1 which is nonsense.
-    fn write_packet<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
+    fn write_packet_unchecked<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
         if packet.len_of_packet() < P::DATA_BEGIN_INDEX + 1 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -273,11 +275,11 @@ pub trait WritePacket: Write {
         Ok(bytes_written)
     }
 
-    /// Similar to [`WritePacket::write_packet`], but it will calculate checksum while writing bytes to the writer.
+    /// Similar to [`WritePacket::write_packet_unchecked`], but it will calculate checksum while writing bytes to the writer.
     ///
     /// # Errors
     /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`Packet::DATA_BEGIN_INDEX`] + 1 which is nonsense.
-    fn write_packet_with_checksum<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
+    fn write_packet<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
         if packet.len_of_packet() < P::DATA_BEGIN_INDEX + 1 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -291,7 +293,6 @@ pub trait WritePacket: Write {
         self.write_u8(SYNC_BYTE)?;
         let mut bytes_written: usize = 2;
         let mut checksum: u8 = 0;
-        dbg!(&packet.as_slice()[1..packet.len_of_packet()]);
         for &b in &packet.as_slice()[1..packet.len_of_packet() - 1] {
             bytes_written += self.write_u8_escaped(b)?;
             checksum = checksum.wrapping_add(b);
@@ -300,6 +301,11 @@ pub trait WritePacket: Write {
         self.write_u8_escaped(checksum)?;
 
         Ok(bytes_written)
+    }
+
+    #[deprecated(since = "1.1.0")]
+    fn write_packet_with_checksum<P: Packet>(&mut self, packet: &P) -> io::Result<usize> {
+        self.write_packet(packet)
     }
 }
 
