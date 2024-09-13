@@ -1,15 +1,15 @@
 //! A packet structures used for communication with JAMMA Video Standart.
-//! 
+//!
 //! # Request Packet (master -> slave)
-//!  00     | 01     | 02  | 03       | 04        | ...          | N + 2 
+//!  00     | 01     | 02  | 03       | 04        | ...          | N + 2
 //! :------:|:------:|:---:|:--------:|:---------:|:------------:|:-----:   
-//!  [SYNC] | `DEST` | `N` | `DATA_0` | `DATA_1 ` | `DATA_(N-1)` | `SUM` 
+//!  [SYNC] | `DEST` | `N` | `DATA_0` | `DATA_1 ` | `DATA_(N-1)` | `SUM`
 //!  
 //! # Response Packet (slave -> master)
-//!  00     | 01     | 02  | 03       | 04        | 05       | ...          | N + 2 
+//!  00     | 01     | 02  | 03       | 04        | 05       | ...          | N + 2
 //! :------:|:------:|:---:|:--------:|:---------:|:--------:|:------------:|:-----:   
-//!  [SYNC] | `DEST` | `N` | [REPORT] | `DATA_0`  | `DATA_1` | `DATA_(N-1)` | `SUM` 
-//! 
+//!  [SYNC] | `DEST` | `N` | [REPORT] | `DATA_0`  | `DATA_1` | `DATA_(N-1)` | `SUM`
+//!
 //! [SYNC]: crate::SYNC_BYTE
 //! [REPORT]: crate::Report
 use std::convert::{AsMut, AsRef};
@@ -45,7 +45,6 @@ impl<const N: usize> ReportField for ResponsePacket<N> {
 }
 
 impl_required_packet_blocks!(ResponsePacket);
-
 
 #[cfg(test)]
 mod tests {
@@ -104,11 +103,10 @@ mod tests {
         use crate::WritePacket;
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = RequestPacket::<256>::from_slice(&REQUEST_DATA);
-        writer.write_packet_with_checksum(&packet).unwrap();
+        writer.write_packet(&packet).unwrap();
 
         assert_eq!(writer.into_inner(), packet.as_slice())
     }
-
 
     // Response Packet tests
     #[test]
@@ -169,10 +167,8 @@ mod tests {
         use crate::WritePacket;
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = ResponsePacket::<256>::from_slice(&RESPONSE_DATA);
-        writer.write_packet_with_checksum(&packet).unwrap();
+        writer.write_packet(&packet).unwrap();
 
         assert_eq!(writer.into_inner(), packet.as_slice())
     }
 }
-
-

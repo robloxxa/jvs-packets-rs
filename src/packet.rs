@@ -14,11 +14,11 @@ pub const SYNC_BYTE: u8 = 0xE0;
 pub const MARK_BYTE: u8 = 0xD0;
 
 /// JVS response report codes.
-/// 
+///
 /// When slave sending response to master, it will always contain a report code, which is placed before first DATA byte.
-/// 
+///
 /// The Report byte indicates whether a request was completed successfully.
-/// 
+///
 /// Check variants documentation if you need to know what which code does.
 #[derive(Debug, Clone)]
 pub enum Report {
@@ -250,7 +250,7 @@ pub trait WritePacket: Write {
     /// Writes a packet to the Writer.
     ///
     /// The function doesn't calculate checksum and instead writes whatever is present in the packet itself. So you have to use [`Packet::calculate_checksum`] before writing.
-    /// Use [`Self::write_packet_with_checksum`] to calculate checksum while writing bytes.
+    /// Use [`Self::write_packet`] to calculate checksum while writing bytes.
     ///
     /// # Errors
     /// Will return [`Err`] if [`Packet::len_of_packet`] less than [`Packet::DATA_BEGIN_INDEX`] + 1 which is nonsense.

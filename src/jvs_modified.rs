@@ -4,16 +4,15 @@
 //! # Request Packet (master -> slave)
 //!  00     | 01  | 02     | 03    | 04    | 05       | 06       | ...          | N + 1                                                                                                                                                  |
 //! :------:|:---:|:------:|:-----:|:-----:|:--------:|:--------:|:------------:|:-----:
-//!  [SYNC] | `N` | `DEST` | `SEQ` | `CMD` | `DATA_0` | `DATA_1` | `DATA_(N-4)` | `SUM` 
+//!  [SYNC] | `N` | `DEST` | `SEQ` | `CMD` | `DATA_0` | `DATA_1` | `DATA_(N-4)` | `SUM`
 //!  
 //! # Response Packet (slave -> master)
 //!  00     | 01  | 02     | 03    | 04       | 05    | 06       | 07       | 08       | ...          | N + 1                                                                                                                                                             |
 //! :------:|:---:|:------:|:-----:|:--------:|:-----:|:--------:|:--------:|:--------:|:------------:|:-----:
-//!  [SYNC] | `N` | `DEST` | `SEQ` | `STATUS` | `CMD` | [REPORT] | `DATA_0` | `DATA_1` | `DATA_(N-4)` | `SUM` 
-//! 
+//!  [SYNC] | `N` | `DEST` | `SEQ` | `STATUS` | `CMD` | [REPORT] | `DATA_0` | `DATA_1` | `DATA_(N-4)` | `SUM`
+//!
 //! [SYNC]: crate::SYNC_BYTE
 //! [REPORT]: crate::Report
-
 
 use crate::{impl_required_packet_blocks, Packet, ReportField};
 
@@ -23,7 +22,7 @@ pub trait ModifiedPacket: Packet {
 
     /// Returns a CMD byte at [`ModifiedPacket::CMD_INDEX`]
     ///
-    /// The CMD byte is used for telling a JVS to execute a speific command 
+    /// The CMD byte is used for telling a JVS to execute a specific command
     fn cmd(&self) -> u8 {
         self.as_ref()[Self::CMD_INDEX]
     }
@@ -99,6 +98,7 @@ impl_required_packet_blocks!(ResponsePacket);
 
 #[cfg(test)]
 mod tests {
+    use crate::WritePacket;
     use super::*;
 
     const REQUEST_DATA: [u8; 8] = [0xE0, 0x06, 0xFF, 0x01, 0x02, 0x01, 0x02, 0x0B];
@@ -157,11 +157,10 @@ mod tests {
     fn test_request_packet_write() {
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = RequestPacket::<256>::from_slice(&REQUEST_DATA);
-        writer.write_packet_with_checksum(&packet).unwrap();
+        writer.write_packet(&packet).unwrap();
 
         assert_eq!(writer.into_inner(), packet.as_slice())
     }
-
 
     // Response Packet tests
     #[test]
@@ -227,9 +226,8 @@ mod tests {
     fn test_response_packet_write() {
         let mut writer = std::io::Cursor::new(vec![]);
         let packet = ResponsePacket::<256>::from_slice(&RESPONSE_DATA);
-        writer.write_packet_with_checksum(&packet).unwrap();
+        writer.write_packet(&packet).unwrap();
 
         assert_eq!(writer.into_inner(), packet.as_slice())
     }
 }
-
